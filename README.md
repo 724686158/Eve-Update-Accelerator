@@ -70,6 +70,31 @@ macOS 上可以让工具自己弹授权框，不用开管理员终端：
 python -m eveupdate apply --gui
 ```
 
+> **如果 `git clone` 卡住或报 `HTTP2 framing layer` / 连接超时**：那是 `github.com`
+> 的 git 端点在你这条线路上不通（国内常见，与 EVE 下载慢同源）。此时改用 GitHub API
+> 走 HTTPS 拉取源码即可（`api.github.com` 通常可用）：
+>
+> ```bash
+> python3 - <<'EOF'
+> import base64, json, os, urllib.request
+> REPO, REF = "724686158/Eve-Update-Accelerator", "main"
+> def get(url):
+>     req = urllib.request.Request(url, headers={"User-Agent": "fetch", "Accept": "application/vnd.github+json"})
+>     return json.load(urllib.request.urlopen(req, timeout=60))
+> tree = get(f"https://api.github.com/repos/{REPO}/git/trees/{REF}?recursive=1")
+> for node in tree["tree"]:
+>     if node["type"] != "blob":
+>         continue
+>     path = node["path"]
+>     blob = get(f"https://api.github.com/repos/{REPO}/contents/{path}?ref={REF}")
+>     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+>     open(path, "wb").write(base64.b64decode(blob["content"]))
+>     print("  ", path)
+> EOF
+> ```
+>
+> 拉下来后照上面的命令跑即可（仓库零第三方依赖，不需要 `pip install`）。
+
 想装成命令（可选）：
 
 ```bash
