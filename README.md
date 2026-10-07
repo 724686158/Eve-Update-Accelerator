@@ -130,18 +130,31 @@ DNS 给的地址本来就又快又稳，工具会明确说"无需改动"。
 所以给了一批常见位置并会在找不到时退回内置基准、明确标注"可能已过期"。
 在 Windows 上跑 `doctor` 会打印它查过的每个路径，若都不对，用 `--index` 指定即可。
 
-### 方式二：免安装的可执行文件（尚未发布）
+### 方式二：免安装的可执行文件
 
-[Releases](https://github.com/724686158/Eve-Update-Accelerator/releases) 里**现在是空的** ——
-打包用的 GitHub Actions 工作流已经写进仓库（`.github/workflows/ci.yml`），但它还没被推送上去：
-写 `.github/workflows/` 需要带 `workflow` 权限的令牌，而当前网络到 `github.com` 的 git 端点不可用
-（细节与补推命令见 [PUSH-STATUS.md](PUSH-STATUS.md)）。工作流生效后，Releases 里会出现：
+到 [Releases](https://github.com/724686158/Eve-Update-Accelerator/releases) 下载：
 
-- **Windows 10**：`eve-update-accelerator-x.y.z-win.exe`
-- **macOS**：`eve-update-accelerator-x.y.z-macos.zip`
+| 平台 | 产物 | 状态 |
+|---|---|---|
+| **macOS（Apple Silicon / M 系列）** | `eve-update-accelerator-1.3.0-macos-arm64.zip` | ✅ 已发布 |
+| macOS（Intel） | —— | 用方式一（源码），或等 Intel 包 |
+| **Windows 10（x86-64）** | `eve-update-accelerator-x.y.z-win.exe` | ⏳ 待构建 |
 
-在那之前请用方式一。这处说明是后补的：最初写文档时把"工作流将来会构建产物"
-当成了"产物已经有了"，这是文档错误，不是产品缺功能——功能本身已经能跑（见下方验证方式）。
+解压后先看包内的 `README-FIRST.txt`，里面写了用法、以及**首次运行被 macOS 拦住时怎么办**。
+
+> ⚠️ **macOS 包未签名**（免费项目没有 Apple 开发者证书），所以首次运行会被 Gatekeeper 拦下。
+> 一条命令解决：
+>
+> ```bash
+> xattr -d com.apple.quarantine ./eve-update-accelerator
+> ```
+>
+> 或者在「访达」里右键该文件 →「打开」→ 弹窗里再点「打开」。
+
+> **为什么 Windows 包还没有**：PyInstaller **不能交叉编译**，Windows 的 `.exe` 必须在
+> Windows 上或 CI 里构建。CI 工作流已经写进仓库（`.github/workflows/ci.yml`），
+> 但它还没被推送到远端（写 `.github/workflows/` 需要带 `workflow` 权限的令牌，
+> 详见 [PUSH-STATUS.md](PUSH-STATUS.md)）。在那之前，Windows 用户请用方式一。
 
 ## 图形界面
 
@@ -340,9 +353,32 @@ python -m unittest discover -s tests -t .      # 41 个用例，离线，约 0.0
 
 ```bash
 pip install -e ".[build]"
-pyinstaller --onefile --name eve-update-accelerator --paths src \
-  --collect-submodules eveupdate src/eveupdate/__main__.py
 ```
+
+打包有一个**坑**：不能直接把 `src/eveupdate/__main__.py` 当入口喂给 PyInstaller ——
+它会被打包成顶层脚本 `__main__`，里面的 `from .cli import main` 是相对导入，
+运行时报 `attempted relative import with no known parent package`。
+要先写一个用**绝对导入**的入口脚本：
+
+```python
+# build_entry.py
+import multiprocessing, sys
+from eveupdate.cli import main
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    sys.exit(main())
+```
+
+然后：
+
+```bash
+pyinstaller --onefile --noconfirm --name eve-update-accelerator \
+  --paths src --collect-submodules eveupdate --hidden-import tkinter \
+  build_entry.py
+```
+
+`--hidden-import tkinter` 不能省（GUI 依赖它）；`--collect-submodules eveupdate`
+保证子模块都被收进去。
 
 CI（GitHub Actions）会在 Windows 与 macOS 上跑测试并构建产物，打 tag 时自动发布到 Releases。
 
