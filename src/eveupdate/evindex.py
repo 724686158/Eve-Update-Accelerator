@@ -23,13 +23,21 @@ from dataclasses import dataclass
 INDEX_NAME = "index_tranquility.txt"
 CACHE_DIR_NAME = "SharedCache"
 
-#: 候选索引路径。Windows 的共享缓存位置随安装方式变化，所以给多个候选；
-#: 用户也可以用 ``--index`` 直接指定。
+#: 候选索引路径。用户也可以用 ``--index`` 直接指定。
+#:
+#: ⚠️ Windows 这几个路径**没有在真实 Windows 上验证过**（开发机是 macOS）：
+#: 共享缓存位置随安装方式（默认 / 自定义目录 / 便携版）变化。所以：
+#: 1. 这里给多个候选尽力覆盖；
+#: 2. 找不到索引时会**退回内置基准并明确标注「可能已过期」**，不会静默用错；
+#: 3. ``doctor`` 会打印实际查过哪些路径，找不到时请把它贴到 issue 里。
 WINDOWS_CANDIDATES = (
     r"%LOCALAPPDATA%\CCP\EVE\SharedCache",
+    r"%LOCALAPPDATA%\CCP\EVE\SharedCache\tq",
     r"%PROGRAMDATA%\CCP\EVE\SharedCache",
     r"%PROGRAMFILES%\CCP\EVE\SharedCache",
     r"%PROGRAMFILES(X86)%\CCP\EVE\SharedCache",
+    r"%USERPROFILE%\Documents\EVE\SharedCache",
+    r"%USERPROFILE%\EVE\SharedCache",
 )
 MACOS_CANDIDATES = (
     "~/Library/Application Support/EVE Online/SharedCache",
@@ -73,15 +81,24 @@ def cache_dirs(platform: str | None = None) -> list[str]:
     return out
 
 
-def find_index(explicit: str | None = None, *, platform: str | None = None) -> str | None:
-    """找到索引文件。``explicit`` 可以是文件或目录。"""
+def candidate_paths(
+    explicit: str | None = None, *, platform: str | None = None
+) -> list[str]:
+    """会去查的所有索引路径（含用户指定的那个）。
+
+    单独暴露出来是为了让诊断能说清「我查过哪儿」—— 找不到索引时这是用户
+    唯一能提供给我们、且我们无法在自己机器上复现的信息（尤其 Windows）。
+    """
     if explicit:
         if os.path.isdir(explicit):
-            candidate = os.path.join(explicit, INDEX_NAME)
-            return candidate if os.path.exists(candidate) else None
-        return explicit if os.path.exists(explicit) else None
-    for directory in cache_dirs(platform):
-        candidate = os.path.join(directory, INDEX_NAME)
+            return [os.path.join(explicit, INDEX_NAME)]
+        return [explicit]
+    return [os.path.join(directory, INDEX_NAME) for directory in cache_dirs(platform)]
+
+
+def find_index(explicit: str | None = None, *, platform: str | None = None) -> str | None:
+    """找到索引文件。``explicit`` 可以是文件或目录。"""
+    for candidate in candidate_paths(explicit, platform=platform):
         if os.path.exists(candidate):
             return candidate
     return None

@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import platform
 import sys
 
@@ -210,7 +211,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     print(f"授权通道：{describe_channel()}")
 
     index = evindex.find_index(args.index)
-    print(f"启动器索引：{index or '未找到（基准会退回内置，可能过期）'}")
+    if index:
+        print(f"启动器索引：{index}")
+    else:
+        print("启动器索引：未找到 —— 基准会退回内置（可能已过期）")
+        print("  已查找以下位置（Windows 上的路径未经验证，若你知道实际位置请用 --index 指定）：")
+        for candidate in evindex.candidate_paths(args.index):
+            print(f"    {'存在' if os.path.exists(candidate) else '不存在'}  {candidate}")
     target = evindex.bench_target(args.index)
     print(f"基准资源：{target.path}  {target.size / 1e6:.1f} MB"
           f"{'（内置，可能过期）' if target.stale_risk else ''}")
