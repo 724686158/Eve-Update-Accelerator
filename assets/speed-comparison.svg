@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="300" viewBox="0 0 860 300" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<rect width="860" height="300" fill="#0d1117"/>
+<text x="34" y="30" fill="#e6edf3" font-size="17" font-weight="600">EVE 更新下载速度：同一网络下的实测对比</text>
+<text x="34" y="52" fill="#8b949e" font-size="12">横轴为 MB/s（十进制）。前三项为本机 10 并发实测，末项为用户启动器实测截图。</text>
+<text x="34" y="91" fill="#c9d1d9" font-size="12.5">修复前：DNS 给的落点已失效（530）</text>
+<rect x="300" y="78" width="3" height="20" rx="3" fill="#c0392b"/>
+<text x="311" y="92" fill="#e6edf3" font-size="12.5" font-weight="600">0.03 MB/s</text>
+<text x="34" y="137" fill="#c9d1d9" font-size="12.5">修复前：落点可用但只有 1.0–1.3 MB/s</text>
+<rect x="300" y="124" width="55" height="20" rx="3" fill="#e67e22"/>
+<text x="363" y="138" fill="#e6edf3" font-size="12.5" font-weight="600">1.27 MB/s</text>
+<text x="34" y="183" fill="#c9d1d9" font-size="12.5">修复后：实测最优落点 10 并发</text>
+<rect x="300" y="170" width="182" height="20" rx="3" fill="#27ae60"/>
+<text x="490" y="184" fill="#e6edf3" font-size="12.5" font-weight="600">4.2 MB/s</text>
+<text x="34" y="229" fill="#c9d1d9" font-size="12.5">修复后：启动器实测（用户截图）</text>
+<rect x="300" y="216" width="560" height="20" rx="3" fill="#16a085"/>
+<text x="868" y="230" fill="#e6edf3" font-size="12.5" font-weight="600">12.91 MB/s</text>
+<line x1="300" y1="70" x2="300" y2="250" stroke="#30363d"/>
+<text x="34" y="280" fill="#8b949e" font-size="11.5">注：0.03 MB/s 为修复前实测区间 5–67 kB/s 的上沿；不代表所有时段都能达到 12.91 MB/s。</text>
+</svg>
