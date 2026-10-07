@@ -1,5 +1,10 @@
 # EVE Update Accelerator
 
+![platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%20macOS-2ea44f)
+![python](https://img.shields.io/badge/python-3.9%2B-3776ab)
+![dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
+![license](https://img.shields.io/badge/license-MIT-blue)
+
 **给 EVE Online 的更新下载挑一条真正走得通的路。**
 
 国内直连时，EVE 启动器的补丁下载常年停在几十 kB/s，甚至一晚上下不完一个 260 MB 的补丁。
