@@ -51,16 +51,9 @@ EVE 的客户端补丁走 `https://binaries.eveonline.com`。这个域名背后�
 
 ## 快速开始
 
-### 方式一：下载可执行文件（不需要 Python）
+### 方式一：从源码跑（现在就能用，推荐）
 
-到 [Releases](https://github.com/724686158/Eve-Update-Accelerator/releases) 下载：
-
-- **Windows 10**：`eve-update-accelerator-x.y.z-win.exe`
-- **macOS**：`eve-update-accelerator-x.y.z-macos.zip`
-
-双击运行即可（Windows 会弹 UAC，macOS 会弹系统授权框）。
-
-### 方式二：从源码跑（需要 Python 3.9+，无第三方依赖）
+需要 Python 3.9+，**无第三方依赖**，连 pip install 都不需要：
 
 ```bash
 git clone https://github.com/724686158/Eve-Update-Accelerator.git
@@ -71,10 +64,17 @@ python -m eveupdate apply      # 测速并写入（需要管理员权限）
 python -m eveupdate revert     # 撤销，恢复 hosts 原样
 ```
 
-Windows 上用管理员身份的 PowerShell 跑 `apply`；macOS 上可以直接让工具弹授权框：
+macOS 上可以让工具自己弹授权框，不用开管理员终端：
 
 ```bash
 python -m eveupdate apply --gui
+```
+
+想装成命令（可选）：
+
+```bash
+pip install -e .
+eve-update-accelerator check
 ```
 
 #### Windows 10 上的权限
@@ -82,10 +82,10 @@ python -m eveupdate apply --gui
 写 hosts 需要管理员权限。两种方式都行：
 
 ```powershell
-# 方式一：以管理员身份打开 PowerShell，然后
+# 以管理员身份打开 PowerShell，然后
 python -m eveupdate apply
 
-# 方式二：普通窗口里跑，让它自己弹 UAC（走 ShellExecuteExW 提权）
+# 或者普通窗口里跑，让它自己弹 UAC（走 ShellExecuteExW 提权）
 python -m eveupdate apply --gui
 ```
 
@@ -97,6 +97,26 @@ python -m eveupdate apply --gui
 
 **建议先跑 `check`**：它会告诉你现在的落点还行不行，以及有没有更快的。如果
 DNS 给的地址本来就又快又稳，工具会明确说"无需改动"。
+
+#### Windows 上的索引路径未经验证
+
+工具的测速基准取自启动器本地的 `SharedCache/index_tranquility.txt`。macOS 上这个
+路径是实测确认的；**Windows 上的候选路径没有在真机验证过**（开发机是 macOS），
+所以给了一批常见位置并会在找不到时退回内置基准、明确标注"可能已过期"。
+在 Windows 上跑 `doctor` 会打印它查过的每个路径，若都不对，用 `--index` 指定即可。
+
+### 方式二：免安装的可执行文件（尚未发布）
+
+[Releases](https://github.com/724686158/Eve-Update-Accelerator/releases) 里**现在是空的** ——
+打包用的 GitHub Actions 工作流已经写进仓库（`.github/workflows/ci.yml`），但它还没被推送上去：
+写 `.github/workflows/` 需要带 `workflow` 权限的令牌，而当前网络到 `github.com` 的 git 端点不可用
+（细节与补推命令见 [PUSH-STATUS.md](PUSH-STATUS.md)）。工作流生效后，Releases 里会出现：
+
+- **Windows 10**：`eve-update-accelerator-x.y.z-win.exe`
+- **macOS**：`eve-update-accelerator-x.y.z-macos.zip`
+
+在那之前请用方式一。这处说明是后补的：最初写文档时把"工作流将来会构建产物"
+当成了"产物已经有了"，这是文档错误，不是产品缺功能——功能本身已经能跑（见下方验证方式）。
 
 ## 图形界面
 
