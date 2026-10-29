@@ -1,0 +1,28 @@
+# PyInstaller 的 Windows 版本资源（写进 exe 的「属性 → 详细信息」）
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 3, 0, 0),
+    prodvers=(1, 3, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable('080404b0', [
+        StringStruct('CompanyName', 'mengzicheng'),
+        StringStruct('FileDescription', 'EVE Online 更新加速器'),
+        StringStruct('FileVersion', '1.3.0'),
+        StringStruct('InternalName', 'eve-update-accelerator'),
+        StringStruct('LegalCopyright', 'MIT License'),
+        StringStruct('OriginalFilename', 'eve-update-accelerator.exe'),
+        StringStruct('ProductName', 'EVE Update Accelerator'),
+        StringStruct('ProductVersion', '1.3.0')
+      ])
+    ]),
+    VarFileInfo([VarStruct('Translation', [2052, 1200])])
+  ]
+)

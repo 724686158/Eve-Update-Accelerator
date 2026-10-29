@@ -138,23 +138,41 @@ DNS 给的地址本来就又快又稳，工具会明确说"无需改动"。
 |---|---|---|
 | **macOS（Apple Silicon / M 系列）** | `eve-update-accelerator-1.3.0-macos-arm64.zip` | ✅ 已发布 |
 | macOS（Intel） | —— | 用方式一（源码），或等 Intel 包 |
-| **Windows 10（x86-64）** | `eve-update-accelerator-x.y.z-win.exe` | ⏳ 待构建 |
+| **Windows 10 / 11（x86-64）** | `EveUpdateAccelerator-1.3.0-win10-x64-setup.exe` | ✅ 已构建，见方式三 |
 
 解压后先看包内的 `README-FIRST.txt`，里面写了用法、以及**首次运行被 macOS 拦住时怎么办**。
 
-> ⚠️ **macOS 包未签名**（免费项目没有 Apple 开发者证书），所以首次运行会被 Gatekeeper 拦下。
-> 一条命令解决：
->
-> ```bash
-> xattr -d com.apple.quarantine ./eve-update-accelerator
-> ```
->
-> 或者在「访达」里右键该文件 →「打开」→ 弹窗里再点「打开」。
+### 方式三：Windows 安装包
 
-> **为什么 Windows 包还没有**：PyInstaller **不能交叉编译**，Windows 的 `.exe` 必须在
-> Windows 上或 CI 里构建。CI 工作流已经写进仓库（`.github/workflows/ci.yml`），
-> 但它还没被推送到远端（写 `.github/workflows/` 需要带 `workflow` 权限的令牌，
-> 详见 [PUSH-STATUS.md](PUSH-STATUS.md)）。在那之前，Windows 用户请用方式一。
+Windows 用户可以直接用安装包，不必装 Python：
+
+`EveUpdateAccelerator-1.3.0-win10-x64-setup.exe`（约 8.5 MB）
+
+获取方式：打 `v*` tag 后由 CI 在 windows runner 上构建并发布到
+[Releases](https://github.com/724686158/Eve-Update-Accelerator/releases)；
+也可以按下面的「打 Windows 安装包」在本地一条命令生成。
+
+双击安装即可。它会：
+
+- 装到 `C:\Program Files\EVE Update Accelerator`，**所有用户可用**；
+- 一起装两个入口：**图形界面版**（`eve-update-accelerator-gui.exe`）和**命令行版**（`eve-update-accelerator.exe`）；
+- 在开始菜单建快捷方式，并在「设置 → 应用」里注册正规的卸载项；
+- 自带 Python 运行时，**目标机器不需要事先装 Python**。
+
+几个刻意的取舍，值得先说清楚：
+
+- **不写系统 PATH**。安装目录里有命令行版，需要时进去运行即可；改 PATH 的风险
+  （尤其是 `PATH` 超过 NSIS 字符串上限时被截断）远大于这点便利。
+- **卸载不会自动还原 hosts**。你可能正靠那几行在跑更新，卸载不该顺手把你网络改了。
+  想恢复的话，先在程序里点「撤销」再卸载。
+- 安装包和 exe **都没有代码签名**（免费项目没有证书），所以 SmartScreen 可能提示
+  "未知发布者"。点"更多信息 → 仍要运行"即可；想避免这件事只能买证书或用源码运行。
+
+> **为什么 Windows 的 exe 必须在 Windows 上构建**：PyInstaller **不能交叉编译**。
+> 本地构建用 [`build_win10.ps1`](build_win10.ps1)，CI 用
+> [`.github/workflows/build-win10-installer.yml`](.github/workflows/build-win10-installer.yml)——
+> 后者会在 windows runner 上把安装包真装一遍、校验文件和注册表、再卸载干净，
+> 然后才作为构建产物上传。
 
 ## 图形界面
 
@@ -344,43 +362,53 @@ A：那需要改流量走向、装证书或驱动，风险和侵入性都高得�
 ```bash
 git clone https://github.com/724686158/Eve-Update-Accelerator.git
 cd Eve-Update-Accelerator
-python -m unittest discover -s tests -t .      # 41 个用例，离线，约 0.04 秒
+python -m unittest discover -s tests -t .      # 45 个用例，离线，约 0.1 秒
 ```
 
 代码风格：零第三方依赖；所有网络与系统调用可注入；注释解释"为什么"而不是"是什么"。
 
-打可执行文件：
+### 打 Windows 安装包
 
-```bash
-pip install -e ".[build]"
+一条命令：
+
+```bat
+build_win10.cmd
 ```
 
-打包有一个**坑**：不能直接把 `src/eveupdate/__main__.py` 当入口喂给 PyInstaller ——
-它会被打包成顶层脚本 `__main__`，里面的 `from .cli import main` 是相对导入，
-运行时报 `attempted relative import with no known parent package`。
-要先写一个用**绝对导入**的入口脚本：
+（或者 `powershell -ExecutionPolicy Bypass -File .\build_win10.ps1`。
+Windows 默认的执行策略是 Restricted，会拒绝直接运行 `.ps1`，`.cmd` 包装器
+用 `-ExecutionPolicy Bypass` 只对本次进程放开，不改系统设置。）
 
-```python
-# build_entry.py
-import multiprocessing, sys
-from eveupdate.cli import main
-if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    sys.exit(main())
+产物：
+
+```
+dist\app\                                            免安装的运行时目录
+dist\EveUpdateAccelerator-<版本>-win10-x64-setup.exe  安装包
 ```
 
-然后：
+需要 Python 3.9+ 和 NSIS（`winget install NSIS.NSIS`，或把便携版解压到
+`.tools\nsis-3.x\`）。脚本会自动装 PyInstaller。
 
-```bash
-pyinstaller --onefile --noconfirm --name eve-update-accelerator \
-  --paths src --collect-submodules eveupdate --hidden-import tkinter \
-  build_entry.py
-```
+打包有三个**坑**，都踩过了：
 
-`--hidden-import tkinter` 不能省（GUI 依赖它）；`--collect-submodules eveupdate`
-保证子模块都被收进去。
+1. **不能**直接把 `src/eveupdate/__main__.py` 当入口喂给 PyInstaller ——
+   它会被打包成顶层脚本 `__main__`，里面的 `from .cli import main` 是相对导入，
+   运行时报 `attempted relative import with no known parent package`。
+   入口要用**绝对导入**，见 `packaging/build_entry.py`。
+2. `--hidden-import tkinter` 不能省（GUI 依赖它）；
+   `--collect-submodules eveupdate` 保证子模块都被收进去。
+3. **用 `--onedir` 而不是 `--onefile`**。单文件版每次启动都要把 30 MB 解压到
+   临时目录，启动慢、还容易被杀软拦；安装包本来就会把文件铺开，没必要再解压一次。
+   两个 exe（图形界面 + 命令行）各自打一份 onedir，但两份产物除入口 `exe` 外
+   完全一致，所以脚本只取对方的 `exe` 塞进同一份 `_internal`，省掉一半体积。
 
-CI（GitHub Actions）会在 Windows 与 macOS 上跑测试并构建产物，打 tag 时自动发布到 Releases。
+另外，`packaging/installer.nsi` 和 `build_win10.ps1` 都带 UTF-8 BOM：
+Windows PowerShell 5.1 和 NSIS 在没有 BOM 时会按系统 ANSI 代码页解析，
+中文会变成乱码甚至直接解析失败。改这两个文件时注意别把 BOM 弄丢。
+
+CI（[`.github/workflows/build-win10-installer.yml`](.github/workflows/build-win10-installer.yml)）
+在 Windows / macOS / Linux 上跑测试，然后在 windows runner 上构建安装包并
+**真装一遍、校验文件与注册表、再静默卸载**，打 `v*` tag 时自动发布到 Releases。
 
 ## 边界与免责
 
