@@ -146,7 +146,7 @@ DNS 给的地址本来就又快又稳，工具会明确说"无需改动"。
 
 Windows 用户可以直接用安装包，不必装 Python：
 
-`EveUpdateAccelerator-1.3.0-win10-x64-setup.exe`（约 8.5 MB）
+`EveUpdateAccelerator-1.3.0-win10-x64-setup.exe`（约 8.8 MB）
 
 获取方式：打 `v*` tag 后由 CI 在 windows runner 上构建并发布到
 [Releases](https://github.com/724686158/Eve-Update-Accelerator/releases)；
