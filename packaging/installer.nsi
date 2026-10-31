@@ -35,7 +35,8 @@ Name "${APP_NAME_CN} ${APP_VERSION}"
 BrandingText "${APP_NAME} ${APP_VERSION}   ·   ${APP_URL}"
 OutFile "${OUTFILE}"
 InstallDir "$PROGRAMFILES64\EVE Update Accelerator"
-InstallDirRegKey HKLM "${UNINST_KEY}" "InstallLocation"
+; 这里刻意不用 InstallDirRegKey：它在 .onInit 之前就读注册表，那时还没 SetRegView 64，
+; 读的是 32 位视图，跟下面写进去的位置对不上。改用 .onInit 里手动读（见那里）。
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 SetCompressorDictSize 32
@@ -92,6 +93,18 @@ Function .onInit
     MessageBox MB_ICONSTOP|MB_OK \
       "本安装包只支持 64 位 Windows。$\r$\n$\r$\n你的系统是 32 位的，请改用源码方式运行（见 README 的方式一）。"
     Abort
+  ${EndIf}
+
+  ; NSIS 是 32 位程序，写 HKLM\Software\...\Uninstall 默认会被 WOW64 重定向到
+  ; Wow6432Node。我们装的是 64 位程序、落在 Program Files，卸载项就该写进原生
+  ; 位置，否则「设置 → 应用」里读到的是一份 32 位的影子条目。
+  ; 注意：卸载段也必须同样 SetRegView 64，否则删的是另一个视图，留下残项。
+  SetRegView 64
+
+  ; 升级安装：沿用上次的安装目录（上面说过为什么不用 InstallDirRegKey）
+  ReadRegStr $0 HKLM "${UNINST_KEY}" "InstallLocation"
+  ${If} $0 != ""
+    StrCpy $INSTDIR $0
   ${EndIf}
 
   ; 用「能否以追加方式打开主程序文件」来判断它是否正被占用。
@@ -171,6 +184,8 @@ SectionEnd
 ; =====================================================================
 Section "Uninstall"
   SetShellVarContext all
+  ; 与安装段保持一致：不设这个，DeleteRegKey 删的是 32 位视图，原生位置会留残项
+  SetRegView 64
   ; 卸载同样要求程序先退出，否则 _internal 里的 DLL 删不掉
   ${If} ${FileExists} "$INSTDIR\${APP_GUI_EXE}"
     ClearErrors
