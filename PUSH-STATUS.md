@@ -9,8 +9,10 @@
 [`.github/workflows/build-win10-installer.yml`](.github/workflows/build-win10-installer.yml)，
 已推送。维护者的令牌需要勾上 **repo + workflow** 两个 scope。
 
-`api.github.com` 在这台机器上是不可用的（403、空响应），所以**不要指望用 API 建
-Release 或上传资产**；打 `v*` tag 让 CI 去发布，是这里唯一走得通的路。
+`api.github.com` 现在**直连可用**（带 token 返回 200），建 Release、上传资产都能走 API。
+注意：git 的 libcurl 直连 `github.com:443` 会被 reset，两者不是一回事，别混。
+
+`v1.3.0-win10` 这个 Release 就是本地构建后用 API 创建并上传的（CI 作为备选路径保留）。
 
 ## 网络：git 必须手动配代理
 
@@ -22,6 +24,9 @@ Release 或上传资产**；打 `v*` tag 让 CI 去发布，是这里唯一走�
 git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 <命令>
 # 或者设 HTTP_PROXY / HTTPS_PROXY 环境变量
 ```
+
+代理进程没启动时（比如 2026-10-31 那天 127.0.0.1:7897 已经没了），git 无论直连还是走代理都推不动；
+这时可以用 Contents API 直接改仓库文件作为兜底（本次就是这么做 `PUSH-STATUS.md` 的）。
 
 另外，`~/.gitconfig` 在这台机器上不可写，`git config --global` 会报
 `could not lock config file`，所以用 `-c` 参数或环境变量传代理。
